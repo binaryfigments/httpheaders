@@ -5,15 +5,16 @@ import (
 	"strings"
 )
 
-// ResponseHeaders struct to fill with information.
-type ResponseHeaders struct {
+// Data struct to fill with information.
+type Data struct {
 	Error        bool        `json:"error,omitempty"`
 	ErrorMessage string      `json:"errormessage,omitempty"`
 	Headers      http.Header `json:"headers,omitempty"`
+	// TLS          *tls.ConnectionState `json:"tls,omitempty"`
 }
 
-// Get function that gets the ResponseHeaders
-func Get(webappurl string) ResponseHeaders {
+// Get function that gets the Data
+func Get(webappurl string) Data {
 
 	// nextURL prefix check for incomplete
 	if caseInsenstiveContains(webappurl, "http://") == false && caseInsenstiveContains(webappurl, "https://") == false {
@@ -24,7 +25,7 @@ func Get(webappurl string) ResponseHeaders {
 	req, err := http.NewRequest("GET", webappurl, nil)
 	req.Header.Add("User-Agent", "ocsr.nl checker")
 	if err != nil {
-		checkResult := ResponseHeaders{
+		checkResult := Data{
 			Error:        true,
 			ErrorMessage: err.Error(),
 		}
@@ -32,7 +33,7 @@ func Get(webappurl string) ResponseHeaders {
 	}
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
-		checkResult := ResponseHeaders{
+		checkResult := Data{
 			Error:        true,
 			ErrorMessage: err.Error(),
 		}
@@ -40,9 +41,10 @@ func Get(webappurl string) ResponseHeaders {
 	}
 	resp.Body.Close()
 
-	checkResult := ResponseHeaders{
+	checkResult := Data{
 		Error:   false,
 		Headers: resp.Header,
+		// TLS:     resp.TLS,
 	}
 	return checkResult
 }
