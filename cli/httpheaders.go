@@ -11,7 +11,8 @@ import (
 func main() {
 	webapp := os.Args[1]
 
-	data := httpheaders.Get(webapp)
+	data := httpheaders.Get(webapp, false)
+	fmt.Println(data.Headers.Get("Server"))
 
 	json, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {

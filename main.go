@@ -3,27 +3,38 @@ package httpheaders
 import (
 	"net/http"
 	"strings"
+	"time"
 )
 
 // Data struct to fill with information.
 type Data struct {
-	Error        bool        `json:"error,omitempty"`
-	ErrorMessage string      `json:"errormessage,omitempty"`
-	Headers      http.Header `json:"headers,omitempty"`
+	Status          int         `json:"status,omitempty"`
+	Protocol        string      `json:"ptotocol,omitempty"`
+	Error           bool        `json:"error,omitempty"`
+	ErrorMessage    string      `json:"errormessage,omitempty"`
+	Headers         http.Header `json:"headers,omitempty"`
+	FollowRedirects bool
 	// TLS          *tls.ConnectionState `json:"tls,omitempty"`
 }
 
 // Get function that gets the Data
-func Get(webappurl string) Data {
-
+func Get(webappurl string, followRedirects bool) Data {
 	// nextURL prefix check for incomplete
 	if caseInsenstiveContains(webappurl, "http://") == false && caseInsenstiveContains(webappurl, "https://") == false {
 		// TODO: Set warning
 		webappurl = "http://" + webappurl
 	}
 
-	req, err := http.NewRequest("GET", webappurl, nil)
-	req.Header.Add("User-Agent", "ocsr.nl checker")
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+	if followRedirects == false {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
+
+	response, err := client.Get(webappurl)
 	if err != nil {
 		checkResult := Data{
 			Error:        true,
@@ -31,19 +42,14 @@ func Get(webappurl string) Data {
 		}
 		return checkResult
 	}
-	resp, err := http.DefaultTransport.RoundTrip(req)
-	if err != nil {
-		checkResult := Data{
-			Error:        true,
-			ErrorMessage: err.Error(),
-		}
-		return checkResult
-	}
-	resp.Body.Close()
+	response.Body.Close()
 
 	checkResult := Data{
-		Error:   false,
-		Headers: resp.Header,
+		Error:           false,
+		FollowRedirects: followRedirects,
+		Headers:         response.Header,
+		Status:          response.StatusCode,
+		Protocol:        response.Proto,
 		// TLS:     resp.TLS,
 	}
 	return checkResult
